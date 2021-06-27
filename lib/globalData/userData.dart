@@ -9,6 +9,7 @@ import '../models/cart.dart';
 class CartData with ChangeNotifier {
   var total = 0;
   List<Cart> cartListToAdd = [];
+  List<String> likedItems = [];
   var user;
   addToCart(itemId, itemQuantity, price) {
     var index;
@@ -45,7 +46,24 @@ class CartData with ChangeNotifier {
     }
   }
 
+  fetchLikedItems() async {
+    likedItems.clear();
+    try {
+      await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(FirebaseAuth.instance.currentUser.uid)
+          .get()
+          .then((value) {
+        likedItems = value["likedItems"];
+      });
+    } catch (err) {
+      print(err);
+    }
+    return likedItems;
+  }
+
   fetchCartItems() async {
+    cartListToAdd.clear();
     try {
       await FirebaseFirestore.instance
           .collection("Users")
@@ -61,7 +79,7 @@ class CartData with ChangeNotifier {
       print(err);
     }
     print(cartListToAdd);
-    notifyListeners();
+    // notifyListeners();
     return cartListToAdd;
   }
 
@@ -79,6 +97,7 @@ class CartData with ChangeNotifier {
       "name": user.name,
       "age": user.age,
       "dobYear": user.dob,
+      "likedItems": []
     });
   }
 }

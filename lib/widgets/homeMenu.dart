@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_gradient_text/easy_gradient_text.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:job_test/globalData/userData.dart';
 import 'package:job_test/models/cart.dart';
@@ -24,6 +25,7 @@ class _HomeMenuState extends State<HomeMenu> {
   );
 
   List<Cart> cartList = [];
+  List<String> likedItems = [];
   var total = 0;
   var isLoading = false;
   fetchItemsFromCart() async {
@@ -31,9 +33,26 @@ class _HomeMenuState extends State<HomeMenu> {
       isLoading = true;
     });
     cartList = await context.read<CartData>().fetchCartItems();
+    likedItems = await context.read<CartData>().fetchLikedItems();
     setState(() {
       isLoading = false;
     });
+  }
+
+  toogleFav(id) async {
+    if (likedItems.contains(id)) {
+      setState(() {
+        likedItems.remove(id);
+      });
+    } else {
+      setState(() {
+        likedItems.add(id);
+      });
+    }
+    await FirebaseFirestore.instance
+        .collection("Users")
+        .doc(FirebaseAuth.instance.currentUser.uid)
+        .update({"likedItems": likedItems});
   }
 
   addToCart(itemId, itemQuantity, price) {
@@ -48,6 +67,7 @@ class _HomeMenuState extends State<HomeMenu> {
   void initState() {
     super.initState();
     cartList.clear();
+    likedItems.clear();
     fetchItemsFromCart();
   }
 
@@ -155,7 +175,26 @@ class _HomeMenuState extends State<HomeMenu> {
                                           style: TextStyle(color: Colors.white),
                                         )),
                                       ),
-                                    )
+                                    ),
+                                    Positioned(
+                                        top: 15,
+                                        right: 0,
+                                        child: Container(
+                                          child: IconButton(
+                                            onPressed: () {
+                                              toogleFav(snap.data.docs[index]
+                                                  ["itemId"]);
+                                            },
+                                            icon: Icon(
+                                              Icons.favorite,
+                                              color: likedItems.contains(snap
+                                                      .data
+                                                      .docs[index]["itemId"])
+                                                  ? Colors.red
+                                                  : Colors.white,
+                                            ),
+                                          ),
+                                        ))
                                   ]),
                                   Padding(
                                     padding: const EdgeInsets.only(
